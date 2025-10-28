@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspección Móvil</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>📋 INSPECCIÓN MÓVIL</h1>
+        <p>Formulario por Trabajador</p>
+    </header>
+
+    <!-- Formulario Principal -->
+    <main class="container">
+        <!-- Información Personal -->
+        <section class="section">
+            <h2>👤 INFORMACIÓN DEL TRABAJADOR</h2>
+            
+            <div class="input-group">
+                <label>NOMBRE Y APELLIDOS *</label>
+                <input type="text" id="nombre" placeholder="Ingrese nombre completo" required>
+            </div>
+            
+            <div class="input-group">
+                <label>CÉDULA *</label>
+                <input type="number" id="cedula" placeholder="Número de cédula" required>
+            </div>
+        </section>
+
+        <!-- Ubicación -->
+        <section class="section">
+            <h2>📍 UBICACIÓN Y ZONAS</h2>
+            
+            <div class="input-group">
+                <label>GRANJA *</label>
+                <select id="granja" required>
+                    <option value="">Seleccione Granja</option>
+                    <option>Granja Geneti</option>
+                    <option>Granja Montana</option>
+                    <option>Granja Montana Ceba</option>
+                    <option>Granja Montana Precebo</option>
+                    <option>Granja Morro</option>
+                    <option>Granja Porcinorte</option>
+                    <option>Granja Rosales</option>
+                    <option>Granja Rosales Ceba</option>
+                    <option>Granja Rosales Precebo</option>
+                    <option>Granja Texas</option>
+                    <option>Granja Virginia</option>
+                    <option>Granja Virginia Cría</option>
+                    <option>Granja Virginia Precebo</option>
+                    <option>Granja Virginia Ceba</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>ZONA *</label>
+                <select id="zona" required>
+                    <option value="">Seleccione Zona</option>
+                    <option>Genética Almacén</option>
+                    <option>Genética APH</option>
+                    <option>Genética Arco Desinfección</option>
+                    <option>Genética Baño</option>
+                    <option>Genética Bascula</option>
+                    <option>Genética Boca Toma</option>
+                    <option>Genética Bodega Concentrado</option>
+                    <option>Genética Bodega Concentrado 1 CIA (Zona Lim)</option>
+                    <option>Genética Bodega Concentrado 2 CIA (Zona Suci)</option>
+                    <option>Genética Bodega Materiales Zona Limpia</option>
+                    <option>Genética Casa Coordinador</option>
+                    <option>Genética Casa Personal AANN SST</option>
+                    <option>Genética Casa Terceros</option>
+                    <option>Genética Caseta Bombas Arco Desinfección</option>
+                    <option>Genética Caseta Contadores</option>
+                    <option>Genética Caseta Insumos Droga</option>
+                    <option>Genética Caseta Químicos</option>
+                    <option>Genética Casino Granja</option>
+                    <option>Genética Cerco Perimetral</option>
+                    <option>Genética Cia Alojamiento</option>
+                    <option>Genética Cia Caseta Bomba</option>
+                    <option>Genética Cia Galpón</option>
+                    <option>Genética Cia Inseminación</option>
+                    <option>Genética Casa Cubiertas</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>TIPO DE ACTIVIDAD *</label>
+                <select id="actividad" required>
+                    <option value="">Seleccione Tipo</option>
+                    <option>Amoblamiento</option>
+                    <option>Granja Genética</option>
+                    <option>Carpintería madera</option>
+                    <option>Carpintería metálica</option>
+                    <option>Cubiertas</option>
+                    <option>Estructura</option>
+                    <option>Pintura</option>
+                    <option>Pisos</option>
+                    <option>Red hidrosanitaria</option>
+                    <option>Granja Paraíso</option>
+                    <option>Redes técnicas</option>
+                    <option>Actividades de limpieza</option>
+                    <option>Gastos fijos</option>
+                    <option>Supervisión técnica</option>
+                    <option>Vías</option>
+                    <option>Cielos falsos</option>
+                    <option>Impermeabilizaciones</option>
+                    <option>Señalización</option>
+                    <option>Muros</option>
+                    <option>Dotación</option>
+                </select>
+            </div>
+
+            <button class="btn btn-gps" onclick="obtenerUbicacion()">
+                📱 OBTENER UBICACIÓN GPS
+            </button>
+            <div id="gps-status" class="gps-status">
+                📍 Ubicación GPS: No obtenida
+            </div>
+        </section>
+
+        <!-- Preguntas de Inspección -->
+        <section class="section">
+            <h2>🔍 EVALUACIÓN DE INSPECCIÓN</h2>
+            
+            <!-- Preguntas SI/NO -->
+            <div class="pregunta-group">
+                <label>¿SE REVISA EL ESTADO GENERAL DE LOS MUROS?</label>
+                <div class="btn-group">
+                    <button class="btn-si" onclick="seleccionarRespuesta(this, 'rev_muros')">✅ SI</button>
+                    <button class="btn-no" onclick="seleccionarRespuesta(this, 'rev_muros')">❌ NO</button>
+                </div>
+            </div>
+
+            <div class="pregunta-group">
+                <label>¿SE IDENTIFICAN FISURAS EN LOS MUROS?</label>
+                <div class="btn-group">
+                    <button class="btn-si" onclick="seleccionarRespuesta(this, 'fisuras')">✅ SI</button>
+                    <button class="btn-no" onclick="seleccionarRespuesta(this, 'fisuras')">❌ NO</button>
+                </div>
+            </div>
+
+            <div class="pregunta-group">
+                <label>¿SE IDENTIFICAN ASENTAMIENTOS EN LOS MUROS?</label>
+                <div class="btn-group">
+                    <button class="btn-si" onclick="seleccionarRespuesta(this, 'asentamientos')">✅ SI</button>
+                    <button class="btn-no" onclick="seleccionarRespuesta(this, 'asentamientos')">❌ NO</button>
+                </div>
+            </div>
+
+            <div class="pregunta-group">
+                <label>¿SE IDENTIFICA HUMEDAD Y HONGOS EN LOS MUROS?</label>
+                <div class="btn-group">
+                    <button class="btn-si" onclick="seleccionarRespuesta(this, 'humedad')">✅ SI</button>
+                    <button class="btn-no" onclick="seleccionarRespuesta(this, 'humedad')">❌ NO</button>
+                </div>
+            </div>
+
+            <div class="pregunta-group">
+                <label>¿SE SOLICITAN MATERIALES AL AUXILIAR ADMINISTRATIVO?</label>
+                <div class="btn-group">
+                    <button class="btn-si" onclick="seleccionarRespuesta(this, 'materiales')">✅ SI</button>
+                    <button class="btn-no" onclick="seleccionarRespuesta(this, 'materiales')">❌ NO</button>
+                </div>
+            </div>
+
+            <!-- Estado BUENO/MALO -->
+            <div class="pregunta-group">
+                <label>LOS PAÑETES DE LOS MUROS SE ENCUENTRAN...</label>
+                <div class="btn-group">
+                    <button class="btn-bueno" onclick="seleccionarEstado(this, 'panetes')">👍 BUEN ESTADO</button>
+                    <button class="btn-malo" onclick="seleccionarEstado(this, 'panetes')">👎 MAL ESTADO</button>
+                </div>
+            </div>
+
+            <div class="pregunta-group">
+                <label>LA ESTRUCTURA DE LOS MUROS SE ENCUENTRAN...</label>
+                <div class="btn-group">
+                    <button class="btn-bueno" onclick="seleccionarEstado(this, 'estructura')">👍 BUEN ESTADO</button>
+                    <button class="btn-malo" onclick="seleccionarEstado(this, 'estructura')">👎 MAL ESTADO</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Novedades -->
+        <section class="section">
+            <h2>📝 OBSERVACIONES Y NOVEDADES</h2>
+            <div class="input-group">
+                <label>¿TIENES NOVEDADES? ESCRÍBELAS AQUÍ:</label>
+                <textarea id="novedades" placeholder="Describa detalladamente las novedades, observaciones o problemas encontrados..." rows="4"></textarea>
+            </div>
+        </section>
+
+        <!-- Fotos -->
+        <section class="section">
+            <h2>📷 REGISTRO FOTOGRÁFICO</h2>
+            <button class="btn btn-foto" onclick="tomarFoto()">
+                📷 TOMAR FOTO CON CÁMARA
+            </button>
+            <div id="contador-fotos" class="contador-fotos">
+                Fotos tomadas: 0
+            </div>
+            <div id="galeria-fotos" class="galeria-fotos"></div>
+        </section>
+
+        <!-- Botones de Acción -->
+        <section class="section acciones">
+            <button class="btn btn-guardar" onclick="guardarInspeccion()">
+                💾 GUARDAR INSPECCIÓN
+            </button>
+            <button class="btn btn-pdf" onclick="generarPDF()">
+                📄 GENERAR PDF
+            </button>
+            <button class="btn btn-limpiar" onclick="limpiarFormulario()">
+                🔄 LIMPIAR FORMULARIO
+            </button>
+        </section>
+    </main>
+
+    <!-- Modal para mensajes -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-titulo">Mensaje</h3>
+            <p id="modal-mensaje"></p>
+            <button class="btn btn-cerrar" onclick="cerrarModal()">CERRAR</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
