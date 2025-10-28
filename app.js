@@ -10,9 +10,17 @@ let datosInspeccion = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Aplicación de Inspección iniciada');
     cargarDatosGuardados();
+    verificarHTTPS();
 });
 
-// ========== GPS ==========
+// ========== VERIFICAR HTTPS ==========
+function verificarHTTPS() {
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        console.warn('⚠️ La app no está en HTTPS. El GPS puede no funcionar correctamente.');
+    }
+}
+
+// ========== GPS MEJORADO ==========
 function obtenerUbicacion() {
     const gpsStatus = document.getElementById('gps-status');
     
@@ -21,65 +29,196 @@ function obtenerUbicacion() {
         return;
     }
 
-    gpsStatus.innerHTML = '🔄 Obteniendo ubicación...';
+    gpsStatus.innerHTML = '🔄 Solicitando permiso de ubicación...';
     gpsStatus.style.background = '#fff3cd';
     gpsStatus.style.borderLeftColor = '#ffc107';
 
     // Opciones mejoradas para GPS
     const opcionesGPS = {
         enableHighAccuracy: true,
-        timeout: 30000, // 30 segundos
+        timeout: 20000,
         maximumAge: 60000
     };
 
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const precision = position.coords.accuracy;
+    // Usar Promise para mejor manejo
+    new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, opcionesGPS);
+    })
+    .then((position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const precision = position.coords.accuracy;
+        
+        datosInspeccion.ubicacion = {
+            lat: lat,
+            lon: lon,
+            precision: precision,
+            timestamp: new Date().toISOString()
+        };
+        
+        gpsStatus.innerHTML = `📍 Ubicación: ${lat.toFixed(6)}, ${lon.toFixed(6)} (±${Math.round(precision)}m)`;
+        gpsStatus.style.background = '#d4edda';
+        gpsStatus.style.borderLeftColor = '#28a745';
+        
+        mostrarMensaje('Éxito', `✅ Ubicación obtenida correctamente\n\n📍 Coordenadas: ${lat.toFixed(6)}, ${lon.toFixed(6)}\n📏 Precisión: ${Math.round(precision)} metros`);
+    })
+    .catch((error) => {
+        manejarErrorGPS(error);
+    });
+}
+
+function manejarErrorGPS(error) {
+    const gpsStatus = document.getElementById('gps-status');
+    let mensaje = '';
+    
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            mensaje = 'Permiso de ubicación denegado.';
+            mostrarInstruccionesGPS();
+            break;
+        case error.POSITION_UNAVAILABLE:
+            mensaje = 'Ubicación no disponible. Verifica que el GPS esté activado.';
+            break;
+        case error.TIMEOUT:
+            mensaje = 'Tiempo de espera agotado. Intenta nuevamente.';
+            break;
+        default:
+            mensaje = 'Error desconocido: ' + error.message;
+    }
+    
+    gpsStatus.innerHTML = '📍 Ubicación GPS: Error';
+    gpsStatus.style.background = '#f8d7da';
+    gpsStatus.style.borderLeftColor = '#dc3545';
+    
+    if (error.code !== error.PERMISSION_DENIED) {
+        mostrarMensaje('Error GPS', '❌ ' + mensaje);
+    }
+}
+
+function mostrarInstruccionesGPS() {
+    const esIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const esAndroid = /Android/i.test(navigator.userAgent);
+    
+    let instruccionesEspecificas = '';
+    
+    if (esAndroid) {
+        instruccionesEspecificas = `
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <h4>📱 En Chrome Android:</h4>
+                <ol>
+                    <li>Toca los <strong>3 puntos (⋮)</strong> arriba a la derecha</li>
+                    <li>Ve a <strong>"Configuración"</strong></li>
+                    <li>Selecciona <strong>"Configuración del sitio"</strong></li>
+                    <li>Busca <strong>"Ubicación"</strong> y actívala</li>
+                    <li>Vuelve a la app y recarga la página</li>
+                </ol>
+                <p><strong>También verifica:</strong></p>
+                <ul>
+                    <li>GPS activado en ajustes del dispositivo</li>
+                    <li>Modo de alta precisión en ubicación</li>
+                </ul>
+            </div>
+        `;
+    } else if (esIOS) {
+        instruccionesEspecificas = `
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <h4>📱 En Safari iOS:</h4>
+                <ol>
+                    <li>Ve a <strong>Ajustes del iPhone</strong></li>
+                    <li>Desplázate y selecciona <strong>"Safari"</strong></li>
+                    <li>Ve a <strong>"Configuración de sitios web"</strong></li>
+                    <li>Selecciona <strong>"Ubicación"</strong></li>
+                    <li>Cambia a <strong>"Preguntar"</strong> o <strong>"Permitir"</strong></li>
+                </ol>
+                <p><strong>También verifica:</strong></p>
+                <ul>
+                    <li>Servicios de ubicación activados</li>
+                    <li>Safari tiene permiso para ubicación</li>
+                </ul>
+            </div>
+        `;
+    } else {
+        instruccionesEspecificas = `
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <h4>🌐 En otros navegadores:</h4>
+                <ol>
+                    <li>Busca el icono de <strong>🔒 candado</strong> en la barra de direcciones</li>
+                    <li>Haz click en <strong>"Permisos del sitio"</strong></li>
+                    <li>Habilita el permiso de <strong>"Ubicación"</strong></li>
+                    <li>Recarga la página</li>
+                </ol>
+            </div>
+        `;
+    }
+
+    const instruccionesHTML = `
+        <div style="text-align: left; padding: 10px;">
+            <h3 style="color: #e74c3c;">🔧 Permiso de Ubicación Requerido</h3>
+            <p>Para usar el GPS, necesitas permitir el acceso a tu ubicación.</p>
             
-            datosInspeccion.ubicacion = {
-                lat: lat,
-                lon: lon,
-                precision: precision,
-                timestamp: new Date().toISOString()
-            };
+            ${instruccionesEspecificas}
             
-            gpsStatus.innerHTML = `📍 Ubicación: ${lat.toFixed(6)}, ${lon.toFixed(6)} (Precisión: ${Math.round(precision)}m)`;
-            gpsStatus.style.background = '#d4edda';
-            gpsStatus.style.borderLeftColor = '#28a745';
+            <div style="background: #d4edda; padding: 12px; border-radius: 8px; margin: 15px 0;">
+                <h4>💡 Consejos importantes:</h4>
+                <ul>
+                    <li>Asegúrate de estar en un lugar con buena señal GPS</li>
+                    <li>Verifica que los servicios de ubicación estén activados</li>
+                    <li>Si usas WiFi, asegúrate de tener conexión a internet</li>
+                </ul>
+            </div>
             
-            mostrarMensaje('Éxito', `Ubicación GPS obtenida correctamente\nPrecisión: ${Math.round(precision)} metros`);
-        },
-        function(error) {
-            let mensaje = '';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    mensaje = 'Permiso de ubicación denegado. Por favor, permite el acceso a la ubicación en la configuración de tu navegador.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    mensaje = 'Información de ubicación no disponible. Verifica tu conexión o GPS.';
-                    break;
-                case error.TIMEOUT:
-                    mensaje = 'Tiempo de espera agotado. Intenta nuevamente.';
-                    break;
-                default:
-                    mensaje = 'Error desconocido al obtener la ubicación.';
-            }
-            
-            gpsStatus.innerHTML = '📍 Ubicación GPS: Error';
-            gpsStatus.style.background = '#f8d7da';
-            gpsStatus.style.borderLeftColor = '#dc3545';
-            
-            mostrarMensaje('Error GPS', mensaje);
-        },
-        opcionesGPS
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
+                <button onclick="reintentarGPS()" style="background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; min-width: 120px;">
+                    🔄 Reintentar GPS
+                </button>
+                <button onclick="usarUbicacionManual()" style="background: #95a5a6; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; min-width: 120px;">
+                    📝 Ubicación Manual
+                </button>
+                <button onclick="cerrarModal()" style="background: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; min-width: 120px;">
+                    ❌ Cerrar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    mostrarMensajeHTML('Permiso de Ubicación', instruccionesHTML);
+}
+
+function reintentarGPS() {
+    cerrarModal();
+    setTimeout(() => {
+        obtenerUbicacion();
+    }, 1000);
+}
+
+function usarUbicacionManual() {
+    cerrarModal();
+    
+    const ubicacionManual = prompt(
+        'Ingresa la ubicación manualmente:\n\nEjemplo: "Granja Montana - Zona Almacén" o "Galpón 5 - Área Norte"',
+        datosInspeccion.ubicacion?.descripcion || ''
     );
+    
+    if (ubicacionManual && ubicacionManual.trim()) {
+        datosInspeccion.ubicacion = {
+            manual: true,
+            descripcion: ubicacionManual.trim(),
+            timestamp: new Date().toISOString()
+        };
+        
+        const gpsStatus = document.getElementById('gps-status');
+        gpsStatus.innerHTML = `📍 Ubicación Manual: ${ubicacionManual.trim()}`;
+        gpsStatus.style.background = '#e3f2fd';
+        gpsStatus.style.borderLeftColor = '#2196f3';
+        
+        mostrarMensaje('Éxito', '✅ Ubicación manual guardada correctamente');
+    } else if (ubicacionManual !== null) {
+        mostrarMensaje('Error', '❌ Debes ingresar una ubicación válida');
+    }
 }
 
 // ========== CÁMARA ==========
 function tomarFoto() {
-    // Verificar si el navegador soporta la cámara
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         // Fallback para navegadores que no soportan camera attribute
         const input = document.createElement('input');
@@ -118,6 +257,13 @@ function tomarFoto() {
 }
 
 function procesarFoto(file) {
+    // Validar tamaño de archivo (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+    if (file.size > maxSize) {
+        mostrarMensaje('Error', '❌ La imagen es demasiado grande. Máximo 10MB permitido.');
+        return;
+    }
+
     const reader = new FileReader();
     
     reader.onload = function(e) {
@@ -131,11 +277,11 @@ function procesarFoto(file) {
         
         datosInspeccion.fotos.push(fotoData);
         actualizarGaleria();
-        mostrarMensaje('Éxito', 'Foto tomada correctamente');
+        mostrarMensaje('Éxito', '✅ Foto tomada correctamente');
     };
     
     reader.onerror = function() {
-        mostrarMensaje('Error', 'Error al procesar la foto');
+        mostrarMensaje('Error', '❌ Error al procesar la foto');
     };
     
     reader.readAsDataURL(file);
@@ -154,12 +300,20 @@ function actualizarGaleria() {
         fotoContainer.style.position = 'relative';
         fotoContainer.style.display = 'inline-block';
         fotoContainer.style.margin = '5px';
+        fotoContainer.style.textAlign = 'center';
         
         const img = document.createElement('img');
         img.src = foto.data;
         img.className = 'foto-miniatura';
         img.alt = `Foto ${index + 1}`;
         img.style.cursor = 'pointer';
+        img.onclick = () => verFotoCompleta(foto.data);
+        
+        const numeroFoto = document.createElement('div');
+        numeroFoto.textContent = `Foto ${index + 1}`;
+        numeroFoto.style.fontSize = '12px';
+        numeroFoto.style.marginTop = '5px';
+        numeroFoto.style.color = '#666';
         
         // Botón para eliminar foto
         const btnEliminar = document.createElement('button');
@@ -175,21 +329,70 @@ function actualizarGaleria() {
         btnEliminar.style.height = '25px';
         btnEliminar.style.cursor = 'pointer';
         btnEliminar.style.color = 'white';
+        btnEliminar.style.fontSize = '12px';
         btnEliminar.onclick = function(e) {
             e.stopPropagation();
             eliminarFoto(index);
         };
         
         fotoContainer.appendChild(img);
+        fotoContainer.appendChild(numeroFoto);
         fotoContainer.appendChild(btnEliminar);
         galeria.appendChild(fotoContainer);
     });
 }
 
+function verFotoCompleta(src) {
+    const modalFoto = document.createElement('div');
+    modalFoto.style.position = 'fixed';
+    modalFoto.style.top = '0';
+    modalFoto.style.left = '0';
+    modalFoto.style.width = '100%';
+    modalFoto.style.height = '100%';
+    modalFoto.style.backgroundColor = 'rgba(0,0,0,0.9)';
+    modalFoto.style.display = 'flex';
+    modalFoto.style.justifyContent = 'center';
+    modalFoto.style.alignItems = 'center';
+    modalFoto.style.zIndex = '10000';
+    
+    const imgCompleta = document.createElement('img');
+    imgCompleta.src = src;
+    imgCompleta.style.maxWidth = '90%';
+    imgCompleta.style.maxHeight = '90%';
+    imgCompleta.style.borderRadius = '10px';
+    
+    const btnCerrar = document.createElement('button');
+    btnCerrar.innerHTML = '✕';
+    btnCerrar.style.position = 'absolute';
+    btnCerrar.style.top = '20px';
+    btnCerrar.style.right = '20px';
+    btnCerrar.style.background = 'rgba(255,255,255,0.2)';
+    btnCerrar.style.border = 'none';
+    btnCerrar.style.borderRadius = '50%';
+    btnCerrar.style.width = '40px';
+    btnCerrar.style.height = '40px';
+    btnCerrar.style.cursor = 'pointer';
+    btnCerrar.style.color = 'white';
+    btnCerrar.style.fontSize = '20px';
+    btnCerrar.onclick = () => document.body.removeChild(modalFoto);
+    
+    modalFoto.appendChild(imgCompleta);
+    modalFoto.appendChild(btnCerrar);
+    modalFoto.onclick = (e) => {
+        if (e.target === modalFoto) {
+            document.body.removeChild(modalFoto);
+        }
+    };
+    
+    document.body.appendChild(modalFoto);
+}
+
 function eliminarFoto(index) {
-    datosInspeccion.fotos.splice(index, 1);
-    actualizarGaleria();
-    mostrarMensaje('Info', 'Foto eliminada');
+    if (confirm('¿Estás seguro de que quieres eliminar esta foto?')) {
+        datosInspeccion.fotos.splice(index, 1);
+        actualizarGaleria();
+        mostrarMensaje('Info', '🗑️ Foto eliminada');
+    }
 }
 
 // ========== FORMULARIO ==========
@@ -265,7 +468,7 @@ function guardarInspeccion() {
         // Guardar datos actuales
         datosInspeccion = datos;
         
-        mostrarMensaje('Éxito', `✅ Inspección guardada correctamente\n📋 ID: ${datos.id}\n👤 Trabajador: ${datos.trabajador.nombre}`);
+        mostrarMensaje('Éxito', `✅ Inspección guardada correctamente\n\n📋 ID: ${datos.id}\n👤 Trabajador: ${datos.trabajador.nombre}\n📅 Fecha: ${new Date().toLocaleString()}`);
         console.log('Inspección guardada:', datos);
     } catch (error) {
         mostrarMensaje('Error', '❌ Error al guardar la inspección: ' + error.message);
@@ -370,12 +573,10 @@ function generarPDF() {
         ventana.document.close();
         
         // Esperar a que se carguen las imágenes
-        ventana.onload = function() {
-            setTimeout(() => {
-                ventana.print();
-                mostrarMensaje('Éxito', '📄 PDF generado correctamente\n\nUse la opción de imprimir y:\n• Seleccione "Guardar como PDF"\n• O envíe directamente a la impresora');
-            }, 1000);
-        };
+        setTimeout(() => {
+            ventana.print();
+            mostrarMensaje('Éxito', '📄 PDF generado correctamente\n\nUse la opción de imprimir y:\n• Seleccione "Guardar como PDF"\n• O envíe directamente a la impresora');
+        }, 1000);
         
     } catch (error) {
         mostrarMensaje('Error', '❌ Error al generar PDF: ' + error.message);
@@ -574,9 +775,11 @@ function crearContenidoPDF() {
                 <div class="valor"><span class="label">Zona:</span> ${datosInspeccion.ubicacion.zona}</div>
                 <div class="valor"><span class="label">Tipo de actividad:</span> ${datosInspeccion.ubicacion.actividad}</div>
                 <div class="valor"><span class="label">Ubicación GPS:</span> 
-                    ${datosInspeccion.ubicacion.gps ? 
-                        `${datosInspeccion.ubicacion.gps.lat.toFixed(6)}, ${datosInspeccion.ubicacion.gps.lon.toFixed(6)} (Precisión: ${Math.round(datosInspeccion.ubicacion.gps.precision)}m)` : 
-                        'No obtenida'}
+                    ${datosInspeccion.ubicacion && datosInspeccion.ubicacion.manual ? 
+                        datosInspeccion.ubicacion.descripcion :
+                        (datosInspeccion.ubicacion && datosInspeccion.ubicacion.lat ? 
+                            `${datosInspeccion.ubicacion.lat.toFixed(6)}, ${datosInspeccion.ubicacion.lon.toFixed(6)} (Precisión: ${Math.round(datosInspeccion.ubicacion.precision)}m)` : 
+                            'No obtenida')}
                 </div>
             </div>
             
@@ -670,6 +873,12 @@ function cargarDatosGuardados() {
 function mostrarMensaje(titulo, mensaje) {
     document.getElementById('modal-titulo').textContent = titulo;
     document.getElementById('modal-mensaje').textContent = mensaje;
+    document.getElementById('modal').style.display = 'flex';
+}
+
+function mostrarMensajeHTML(titulo, contenidoHTML) {
+    document.getElementById('modal-titulo').textContent = titulo;
+    document.getElementById('modal-mensaje').innerHTML = contenidoHTML;
     document.getElementById('modal').style.display = 'flex';
 }
 
